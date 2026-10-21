@@ -1,0 +1,494 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>QuickBite | Admin Dashboard</title>
+  <meta name="description" content="QuickBite restaurant administration dashboard">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body class="admin-body">
+
+  <!-- ADMIN LOGIN -->
+  <section id="adminLogin" class="admin-login-page">
+
+    <a href="../index.html" class="admin-back-link">
+      ← Back to QuickBite
+    </a>
+
+    <div class="login-decoration login-decoration-one"></div>
+    <div class="login-decoration login-decoration-two"></div>
+
+    <div class="admin-login-card">
+
+      <a href="../index.html" class="admin-brand">
+        <span class="admin-brand-icon">Q</span>
+        <span>Quick<span class="brand-highlight">Bite</span></span>
+      </a>
+
+      <div class="admin-login-illustration">
+        <span>🍔</span>
+        <span>🍕</span>
+        <span>🍟</span>
+      </div>
+
+      <span class="admin-eyebrow">RESTAURANT MANAGEMENT</span>
+
+      <h1>Welcome back!</h1>
+
+      <p class="admin-login-description">
+        Sign in to manage your menu, monitor customer orders,
+        and keep your restaurant running smoothly.
+      </p>
+
+      <form id="adminLoginForm" class="admin-form">
+
+        <div class="admin-field">
+          <label for="adminEmail">Email address</label>
+          <input
+            id="adminEmail"
+            type="email"
+            placeholder="admin@example.com"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="admin-field">
+          <label for="adminPassword">Password</label>
+          <input
+            id="adminPassword"
+            type="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button class="primary-btn admin-login-button" type="submit">
+          Sign In to Dashboard →
+        </button>
+
+      </form>
+
+      <p id="adminMessage" class="admin-message" aria-live="polite"></p>
+
+      <div class="admin-login-footer">
+        <span>🔒</span>
+        Secure restaurant administration
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="adminPanel" class="admin-app hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar">
+
+      <a href="../index.html" class="admin-brand sidebar-brand">
+        <span class="admin-brand-icon">Q</span>
+        <span>Quick<span class="brand-highlight">Bite</span></span>
+      </a>
+
+      <div class="sidebar-caption">WORKSPACE</div>
+
+      <nav class="admin-navigation">
+        <a href="#dashboardHome" class="admin-nav-link active">
+          <span class="nav-icon">▦</span>
+          Dashboard
+        </a>
+
+        <a href="#foodManagement" class="admin-nav-link">
+          <span class="nav-icon">🍽</span>
+          Manage Food
+        </a>
+
+        <a href="#addFoodSection" class="admin-nav-link">
+          <span class="nav-icon">＋</span>
+          Add New Food
+        </a>
+
+        <a href="#orderManagement" class="admin-nav-link">
+          <span class="nav-icon">▤</span>
+          Customer Orders
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-help-card">
+          <span class="help-icon">💡</span>
+          <strong>Quick tip</strong>
+          <p>Keep your menu updated to give customers the best experience.</p>
+        </div>
+
+        <a href="../index.html" class="sidebar-customer-link">
+          <span>↗</span>
+          Customer Website
+        </a>
+
+        <button id="adminLogout" class="sidebar-logout" type="button">
+          <span>⇥</span>
+          Logout
+        </button>
+      </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+
+      <!-- TOP BAR -->
+      <header class="admin-topbar">
+
+        <div class="admin-topbar-title">
+          <span class="admin-eyebrow">OVERVIEW</span>
+          <h1>Restaurant Dashboard</h1>
+          <p>Manage your restaurant from one place.</p>
+        </div>
+
+        <div class="admin-topbar-right">
+          <div class="admin-status">
+            <span class="status-dot"></span>
+            Admin Workspace
+          </div>
+
+          <div class="admin-avatar">QB</div>
+        </div>
+
+      </header>
+
+
+      <!-- DASHBOARD HOME -->
+      <section id="dashboardHome" class="admin-dashboard-section">
+
+        <div class="welcome-banner">
+          <div>
+            <span class="welcome-tag">YOUR RESTAURANT, YOUR RULES</span>
+            <h2>Good food starts here.</h2>
+            <p>
+              Manage your menu, organize incoming orders,
+              and keep QuickBite running smoothly.
+            </p>
+
+            <a href="#addFoodSection" class="welcome-action">
+              Add a new dish <span>→</span>
+            </a>
+          </div>
+
+          <div class="welcome-art" aria-hidden="true">
+            <span class="welcome-plate">🍛</span>
+            <span class="welcome-food food-one">🍕</span>
+            <span class="welcome-food food-two">🍔</span>
+          </div>
+        </div>
+
+
+        <!-- OVERVIEW CARDS -->
+        <div class="admin-section-heading">
+          <div>
+            <span class="admin-eyebrow">AT A GLANCE</span>
+            <h2>Restaurant Overview</h2>
+          </div>
+        </div>
+
+        <div class="admin-stats-grid">
+
+          <article class="admin-stat-card">
+            <div class="stat-card-top">
+              <span class="stat-icon stat-orange">🍽️</span>
+              <span class="stat-label">MENU</span>
+            </div>
+            <p>Total Food Items</p>
+            <h3 id="totalFoodCount">--</h3>
+            <span class="stat-description">Items in your menu</span>
+          </article>
+
+          <article class="admin-stat-card">
+            <div class="stat-card-top">
+              <span class="stat-icon stat-purple">📦</span>
+              <span class="stat-label">ORDERS</span>
+            </div>
+            <p>Total Orders</p>
+            <h3 id="totalOrderCount">--</h3>
+            <span class="stat-description">Orders recorded</span>
+          </article>
+
+          <article class="admin-stat-card">
+            <div class="stat-card-top">
+              <span class="stat-icon stat-green">✓</span>
+              <span class="stat-label">FULFILMENT</span>
+            </div>
+            <p>Completed Orders</p>
+            <h3 id="completedOrderCount">--</h3>
+            <span class="stat-description">Orders delivered to customers</span>
+          </article>
+
+          <article class="admin-stat-card">
+            <div class="stat-card-top">
+              <span class="stat-icon stat-blue">₹</span>
+              <span class="stat-label">REVENUE</span>
+            </div>
+            <p>Total Sales</p>
+            <h3 id="totalSales">--</h3>
+            <span class="stat-description">Excludes cancelled orders</span>
+          </article>
+
+        </div>
+
+
+        <!-- QUICK ACTIONS -->
+        <div class="admin-section-heading quick-actions-heading">
+          <div>
+            <span class="admin-eyebrow">GET THINGS DONE</span>
+            <h2>Quick Actions</h2>
+          </div>
+        </div>
+
+        <div class="quick-actions-grid">
+
+          <a href="#addFoodSection" class="quick-action-card">
+            <span class="quick-action-icon">＋</span>
+            <span>
+              <strong>Add Food Item</strong>
+              <small>Introduce a new dish</small>
+            </span>
+            <span class="quick-action-arrow">→</span>
+          </a>
+
+          <a href="#foodManagement" class="quick-action-card">
+            <span class="quick-action-icon purple-action">☷</span>
+            <span>
+              <strong>Manage Menu</strong>
+              <small>Review your food items</small>
+            </span>
+            <span class="quick-action-arrow">→</span>
+          </a>
+
+          <a href="#orderManagement" class="quick-action-card">
+            <span class="quick-action-icon green-action">▤</span>
+            <span>
+              <strong>View Orders</strong>
+              <small>Manage customer orders</small>
+            </span>
+            <span class="quick-action-arrow">→</span>
+          </a>
+
+        </div>
+
+      </section>
+
+
+      <!-- ADD FOOD -->
+      <section id="addFoodSection" class="admin-dashboard-section">
+
+        <div class="admin-section-heading">
+          <div>
+            <span class="admin-eyebrow">MENU MANAGEMENT</span>
+            <h2>Add a New Dish</h2>
+            <p>Create a delicious new addition to your menu.</p>
+          </div>
+
+          <span class="section-heading-icon">🍴</span>
+        </div>
+
+        <div class="admin-content-card">
+
+          <div class="admin-card-heading">
+            <div class="form-heading-icon">✦</div>
+            <div>
+              <h3>Food Item Details</h3>
+              <p>Enter the details below to add food to QuickBite.</p>
+            </div>
+          </div>
+
+          <form id="foodForm" class="food-admin-form">
+
+            <div class="admin-form-grid">
+
+              <div class="admin-field">
+                <label for="foodName">Food Name *</label>
+                <input
+                  id="foodName"
+                  required
+                  placeholder="e.g. Paneer Pizza"
+                >
+              </div>
+
+              <div class="admin-field">
+                <label for="foodCategory">Category *</label>
+                <input
+                  id="foodCategory"
+                  required
+                  placeholder="e.g. Pizza"
+                >
+              </div>
+
+              <div class="admin-field">
+                <label for="foodPrice">Price (₹) *</label>
+                <div class="price-input-wrap">
+                  <span>₹</span>
+                  <input
+                    id="foodPrice"
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    required
+                    placeholder="199"
+                  >
+                </div>
+              </div>
+
+              <div class="admin-field">
+                <label for="foodEmoji">Food Emoji</label>
+                <input
+                  id="foodEmoji"
+                  maxlength="8"
+                  value="🍽️"
+                  placeholder="🍕"
+                >
+                <small>Use an emoji to represent your dish.</small>
+              </div>
+
+              <div class="admin-field admin-field-full">
+                <label for="foodImage">Food Photo *</label>
+                <input
+                  id="foodImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  required
+                >
+                <small>Choose a JPG, PNG, or WebP photo (maximum 5 MB). It will be compressed and saved with the menu item.</small>
+                <img
+                  id="foodImagePreview"
+                  class="food-upload-preview hidden"
+                  alt="Selected food photo preview"
+                >
+              </div>
+
+              <div class="admin-field admin-field-full">
+                <label for="foodDescription">Food Description *</label>
+                <input
+                  id="foodDescription"
+                  required
+                  placeholder="Describe ingredients, taste, or special features"
+                >
+              </div>
+
+            </div>
+
+            <div class="admin-form-footer">
+              <p>Fields marked with * are required.</p>
+
+              <button class="primary-btn add-food-submit" type="submit">
+                + Add Food Item
+              </button>
+            </div>
+
+          </form>
+
+          <p id="foodMessage" class="admin-message" aria-live="polite"></p>
+
+        </div>
+
+      </section>
+
+
+      <!-- MANAGE FOOD -->
+      <section id="foodManagement" class="admin-dashboard-section">
+
+        <div class="admin-section-heading">
+          <div>
+            <span class="admin-eyebrow">YOUR FOOD COLLECTION</span>
+            <h2>Manage Food Items</h2>
+            <p>Review the dishes currently available on your menu.</p>
+          </div>
+        </div>
+
+        <div class="admin-content-card">
+
+          <div class="admin-card-heading">
+            <div class="form-heading-icon">🍽</div>
+            <div>
+              <h3>Your Menu</h3>
+              <p>Add or manage your available food items.</p>
+            </div>
+          </div>
+
+          <div id="adminFoodList" class="admin-dynamic-list">
+            <div class="admin-empty-state">
+              <span>🍜</span>
+              <h3>Your menu will appear here</h3>
+              <p>Food items will appear after they are loaded.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- CUSTOMER ORDERS -->
+      <section id="orderManagement" class="admin-dashboard-section">
+
+        <div class="admin-section-heading">
+          <div>
+            <span class="admin-eyebrow">ORDER MANAGEMENT</span>
+            <h2>Customer Orders</h2>
+            <p>Review orders and manage their status.</p>
+          </div>
+        </div>
+
+        <div class="admin-content-card">
+
+          <div class="admin-card-heading">
+            <div class="form-heading-icon">📦</div>
+            <div>
+              <h3>All Orders</h3>
+              <p>Customer orders will be displayed below.</p>
+            </div>
+          </div>
+
+          <div id="adminOrderList" class="admin-dynamic-list">
+            <div class="admin-empty-state">
+              <span>📋</span>
+              <h3>No orders displayed yet</h3>
+              <p>Orders will appear here when loaded from your database.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- FOOTER -->
+      <footer class="admin-footer">
+        <a href="../index.html" class="admin-footer-brand">
+          Quick<span>Bite</span>
+        </a>
+
+        <p>Restaurant management made simple.</p>
+        <span>© 2026 QuickBite Admin</span>
+      </footer>
+
+    </main>
+
+  </div>
+
+  <script type="module" src="Admin.js"></script>
+
+</body>
+</html>

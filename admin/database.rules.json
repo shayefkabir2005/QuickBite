@@ -1,0 +1,39 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "foods": {
+      ".read": true,
+      "$foodId": {
+        ".write": "auth != null && auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true",
+        ".validate": "!newData.exists() || (newData.hasChildren(['name', 'category', 'price']) && newData.child('name').isString() && newData.child('category').isString() && newData.child('price').isNumber() && newData.child('price').val() > 0)"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true))",
+        ".write": "auth != null && ((auth.uid == $uid && newData.exists()) || (auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['name', 'email']) && newData.child('name').isString() && newData.child('email').isString() && (!newData.child('cart').exists() || newData.child('cart').hasChildren()))",
+        "email": {
+          ".validate": "newData.isString() && (data.exists() ? newData.val() == data.val() : newData.val() == auth.token.email)"
+        }
+      }
+    },
+    "orders": {
+      ".read": "auth != null && auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true",
+      "$orderId": {
+        ".write": "auth != null && ((auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true) || (!data.exists() && auth.token.email != 'shayefkabir2005@gmail.com' && newData.child('userId').val() == auth.uid))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['userId', 'customerEmail', 'customerName', 'date', 'items', 'total', 'status']) && newData.child('userId').isString() && newData.child('customerEmail').isString() && newData.child('customerName').isString() && newData.child('date').isString() && newData.child('items').hasChildren() && newData.child('total').isNumber() && newData.child('total').val() > 0 && newData.child('status').val().matches(/^(Pending|Preparing|Out for Delivery|Delivered|Cancelled)$/) && ((auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true) || (newData.child('status').val() == 'Pending' && newData.child('customerEmail').val() == auth.token.email)))"
+      }
+    },
+    "userOrders": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true))",
+        "$orderId": {
+          ".write": "auth != null && ((auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true) || (auth.token.email != 'shayefkabir2005@gmail.com' && auth.uid == $uid && !data.exists() && newData.child('userId').val() == auth.uid))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['userId', 'customerEmail', 'customerName', 'date', 'items', 'total', 'status']) && newData.child('userId').val() == $uid && newData.child('customerEmail').isString() && newData.child('customerName').isString() && newData.child('date').isString() && newData.child('items').hasChildren() && newData.child('total').isNumber() && newData.child('total').val() > 0 && newData.child('status').val().matches(/^(Pending|Preparing|Out for Delivery|Delivered|Cancelled)$/) && ((auth.token.email == 'shayefkabir2005@gmail.com' && auth.token.email_verified == true) || (newData.child('status').val() == 'Pending' && newData.child('customerEmail').val() == auth.token.email)))"
+        }
+      }
+    }
+  }
+}
