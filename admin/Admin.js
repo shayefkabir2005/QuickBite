@@ -9,6 +9,7 @@ import {
   getIdToken,
   ref,
   get,
+  onValue,
   set,
   update,
   remove,
@@ -20,6 +21,26 @@ const ADMIN_EMAIL = "shayefkabir2005@gmail.com";
 const $ = (id) => document.getElementById(id);
 
 let isAdmin = false;
+let stopOrdersListener = null;
+let knownOrderIds = null;
+const newOrderIds = new Set();
+
+function showNewOrderNotification() {
+  const newOrderCount = newOrderIds.size;
+  const toast = $("newOrderToast");
+  const notificationText = newOrderCount === 1
+    ? "A new customer order has arrived."
+    : `${newOrderCount} new customer orders have arrived.`;
+  $("newOrderToastText").textContent = notificationText;
+  toast.hidden = false;
+  $("orderNotificationBadge").textContent = newOrderCount > 1 ? String(newOrderCount) : "NEW";
+  $("orderNotificationBadge").classList.remove("hidden");
+  $("orderSectionNewBadge").textContent =
+    newOrderCount > 1 ? `${newOrderCount} NEW` : "NEW ORDER";
+  $("orderSectionNewBadge").classList.remove("hidden");
+  $("newOrderSectionText").textContent = notificationText;
+  $("newOrderSectionAlert").hidden = false;
+}
 
 function message(id, text) {
   $(id).textContent = text;
@@ -30,6 +51,13 @@ function safe(value) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;",
     '"': "&quot;", "'": "&#39;"
   })[char]);
+}
+
+function formatPrice(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(amount)
+    : "0";
 }
 
 async function loadAdminFoods() {
@@ -58,8 +86,8 @@ async function loadAdminFoods() {
       `).join("");
 }
 
-async function loadAdminOrders() {
-  const snapshot = await get(ref(db, "orders"));
+async function loadAdminOrders(snapshot = null) {
+  if (!snapshot) snapshot = await get(ref(db, "orders"));
   const orders = Object.entries(snapshot.val() || {});
   const completedOrders = orders.filter(([, order]) => order.status === "Delivered");
   const totalSales = orders.reduce((total, [, order]) => {
@@ -77,24 +105,56 @@ async function loadAdminOrders() {
 
   $("adminOrderList").innerHTML = orders.length === 0
     ? "<p>No orders received yet.</p>"
-    : orders.map(([id, order]) => `
-        <div class="order-card">
-          <h3>Order #${safe(id.slice(0, 8))}</h3>
-          <p>Customer: ${safe(order.customerEmail)}</p>
-          <p>Total: ₹${Number(order.total).toFixed(2)}</p>
-          <p>Current status: <strong>${safe(order.status)}</strong></p>
-          <label for="status-${safe(id)}">Change status</label>
-          <select id="status-${safe(id)}">
-            ${["Pending", "Preparing", "Out for Delivery", "Delivered", "Cancelled"]
-              .map((status) => `
-                <option ${order.status === status ? "selected" : ""}
-                  value="${status}">${status}</option>
-              `).join("")}
-          </select>
-          <button data-status="${safe(id)}"
-            data-user-id="${safe(order.userId)}">Update Status</button>
-        </div>
-      `).join("");
+    : orders.map(([id, order]) => {
+        const items = Array.isArray(order.items)
+          ? order.items
+          : Object.values(order.items || {});
+        const itemList = items.length
+          ? items.map((item) => {
+              const quantity = Number(item.quantity) || 0;
+              const itemSubtotal = Number.isFinite(Number(item.subtotal))
+                ? Number(item.subtotal)
+                : (Number(item.price) || 0) * quantity;
+              return `
+                <li>
+                  <span>${safe(item.name || "Unnamed item")} × ${quantity}</span>
+                  <strong>₹${formatPrice(itemSubtotal)}</strong>
+                </li>
+              `;
+            }).join("")
+          : "<li>Item details are not available for this order.</li>";
+
+        return `
+          <article class="order-card">
+            <div class="order-card-heading">
+              <h3>Order #${safe(id.slice(0, 8))}
+                ${newOrderIds.has(id) ? '<span class="new-order-label">NEW ORDER</span>' : ""}
+              </h3>
+              <p>Current status: <strong>${safe(order.status || "Pending")}</strong></p>
+            </div>
+            <p>Customer: <strong>${safe(order.customerName || "Customer")}</strong>
+              (${safe(order.customerEmail || "Email unavailable")})</p>
+            <p><strong>Mobile number:</strong> ${safe(order.customerPhone || "Not provided")}</p>
+            <div class="admin-ordered-items">
+              <strong>Items ordered</strong>
+              <ul>${itemList}</ul>
+            </div>
+            <p class="admin-order-address"><strong>Delivery address:</strong>
+              ${safe(order.deliveryAddress || "Address not available")}</p>
+            <p class="admin-order-total">Order total: <strong>₹${formatPrice(order.total)}</strong></p>
+            <label for="status-${safe(id)}">Change status</label>
+            <select id="status-${safe(id)}">
+              ${["Pending", "Preparing", "Out for Delivery", "Delivered", "Cancelled"]
+                .map((status) => `
+                  <option ${order.status === status ? "selected" : ""}
+                    value="${status}">${status}</option>
+                `).join("")}
+            </select>
+            <button data-status="${safe(id)}"
+              data-user-id="${safe(order.userId)}">Update Status</button>
+          </article>
+        `;
+      }).join("");
 }
 
 async function refreshDashboard() {
@@ -102,7 +162,27 @@ async function refreshDashboard() {
 
   try {
     await loadAdminFoods();
-    await loadAdminOrders();
+    if (!stopOrdersListener) {
+      stopOrdersListener = onValue(ref(db, "orders"), (snapshot) => {
+        const orders = Object.entries(snapshot.val() || {});
+        if (knownOrderIds === null) {
+          knownOrderIds = new Set(orders.map(([id]) => id));
+        } else {
+          const addedOrders = orders.filter(([id]) => !knownOrderIds.has(id));
+          addedOrders.forEach(([id]) => newOrderIds.add(id));
+          knownOrderIds = new Set(orders.map(([id]) => id));
+          if (addedOrders.length > 0) showNewOrderNotification();
+        }
+
+        loadAdminOrders(snapshot).catch((error) => {
+          console.error("Could not refresh customer orders:", error);
+          message("adminMessage", "Could not refresh customer orders.");
+        });
+      }, (error) => {
+        console.error("Could not listen for new customer orders:", error);
+        message("adminMessage", "Live order notifications are unavailable. Check database rules.");
+      });
+    }
   } catch (error) {
     console.error("Could not load the admin dashboard:", error);
     message("adminMessage", "Could not load data. Check Realtime Database rules.");
@@ -150,10 +230,38 @@ onAuthStateChanged(auth, async (user) => {
   $("adminLogin").classList.toggle("hidden", isAdmin);
   $("adminPanel").classList.toggle("hidden", !isAdmin);
 
-  if (isAdmin) await refreshDashboard();
+  if (isAdmin) {
+    await refreshDashboard();
+  } else if (stopOrdersListener) {
+    stopOrdersListener();
+    stopOrdersListener = null;
+    knownOrderIds = null;
+    newOrderIds.clear();
+  }
 });
 
 $("adminLogout").addEventListener("click", () => signOut(auth));
+$("closeNewOrderToast").addEventListener("click", () => {
+  $("newOrderToast").hidden = true;
+});
+$("viewNewOrderBtn").addEventListener("click", () => {
+  dismissNewOrderNotifications();
+});
+$("viewNewOrdersSectionBtn").addEventListener("click", () => {
+  dismissNewOrderNotifications();
+});
+
+function dismissNewOrderNotifications() {
+  $("newOrderToast").hidden = true;
+  $("newOrderSectionAlert").hidden = true;
+  $("orderNotificationBadge").classList.add("hidden");
+  $("orderSectionNewBadge").classList.add("hidden");
+  newOrderIds.clear();
+  loadAdminOrders().catch((error) => {
+    console.error("Could not refresh order notification labels:", error);
+    message("adminMessage", "Could not refresh the order list.");
+  });
+}
 
 let selectedImagePreviewUrl = null;
 let foodSubmitInProgress = false;
@@ -355,7 +463,6 @@ $("adminOrderList").addEventListener("click", async (event) => {
       [`userOrders/${userId}/${id}/status`]: status
     });
     message("adminMessage", "Order status updated.");
-    await loadAdminOrders();
   } catch (error) {
     console.error("Order status update failed:", error);
     message("adminMessage", "Could not update order status.");

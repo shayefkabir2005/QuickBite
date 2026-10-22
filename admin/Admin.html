@@ -280,7 +280,7 @@
           <a href="#orderManagement" class="quick-action-card">
             <span class="quick-action-icon green-action">▤</span>
             <span>
-              <strong>View Orders</strong>
+              <strong>View Orders <span id="orderNotificationBadge" class="order-notification-badge hidden">NEW</span></strong>
               <small>Manage customer orders</small>
             </span>
             <span class="quick-action-arrow">→</span>
@@ -446,9 +446,18 @@
         <div class="admin-section-heading">
           <div>
             <span class="admin-eyebrow">ORDER MANAGEMENT</span>
-            <h2>Customer Orders</h2>
+            <h2>
+              Customer Orders
+              <span id="orderSectionNewBadge" class="order-notification-badge hidden">NEW</span>
+            </h2>
             <p>Review orders and manage their status.</p>
           </div>
+        </div>
+
+        <div id="newOrderSectionAlert" class="new-order-section-alert" role="status" aria-live="polite" hidden>
+          <span class="new-order-section-icon" aria-hidden="true">🔔</span>
+          <span id="newOrderSectionText">A new customer order has arrived.</span>
+          <a href="#adminOrderList" id="viewNewOrdersSectionBtn">View new orders ↓</a>
         </div>
 
         <div class="admin-content-card">
@@ -486,6 +495,13 @@
 
     </main>
 
+  </div>
+
+  <div id="newOrderToast" class="new-order-toast" role="status" aria-live="polite" hidden>
+    <span class="new-order-toast-icon" aria-hidden="true">🔔</span>
+    <span id="newOrderToastText">A new customer order has arrived.</span>
+    <a href="#orderManagement" id="viewNewOrderBtn">View order</a>
+    <button id="closeNewOrderToast" type="button" aria-label="Dismiss new order notification">×</button>
   </div>
 
   <script type="module" src="Admin.js"></script>

@@ -192,12 +192,45 @@
 
           <div class="summary-divider"></div>
 
+          <section class="delivery-address-section" aria-labelledby="deliveryAddressTitle">
+            <div class="delivery-address-heading">
+              <span class="delivery-address-icon" aria-hidden="true">📍</span>
+              <div>
+                <h4 id="deliveryAddressTitle">Delivery details</h4>
+                <p>Where and how can we reach you?</p>
+              </div>
+            </div>
+            <label for="deliveryPhone">Mobile number</label>
+            <input
+              id="deliveryPhone"
+              name="deliveryPhone"
+              type="tel"
+              required
+              maxlength="18"
+              placeholder="e.g. 98765 43210"
+              autocomplete="tel"
+              inputmode="tel"
+            >
+            <p class="delivery-address-hint">We’ll use this number if the delivery partner needs to contact you.</p>
+            <label for="deliveryAddress">Full address</label>
+            <textarea
+              id="deliveryAddress"
+              name="deliveryAddress"
+              rows="4"
+              required
+              maxlength="500"
+              placeholder="House/flat, street, area, city and PIN code"
+              autocomplete="street-address"
+            ></textarea>
+            <p class="delivery-address-hint">Add a complete address so your food reaches you without delay.</p>
+          </section>
+
           <p class="summary-note">
-            Review your order before placing it.
+            Please review your order and delivery details before confirming.
           </p>
 
           <button id="checkoutBtn" class="primary-btn checkout-btn">
-            Place Order →
+            Confirm Order →
           </button>
 
           <p id="checkoutMessage" aria-live="polite"></p>

@@ -32,6 +32,8 @@ const cartTotalElement = $("#cartTotal");
 const checkoutBtn = $("#checkoutBtn");
 const checkoutMessage = $("#checkoutMessage");
 const orderListElement = $("#orderList");
+const deliveryAddressInput = $("#deliveryAddress");
+const deliveryPhoneInput = $("#deliveryPhone");
 
 const accountBtn = $("#accountBtn");
 const authDialog = $("#authDialog");
@@ -349,6 +351,7 @@ function renderFood() {
             class="add-btn"
             data-action="add"
             data-id="${escapeHTML(food.id)}"
+            aria-label="Add ${escapeHTML(food.name)} to cart"
           >
             + Add
           </button>
@@ -409,7 +412,7 @@ foodList.addEventListener("click", (event) => {
   }
 
   if (button.dataset.action === "add") {
-    addToCart(button.dataset.id);
+    addToCart(button.dataset.id, button);
   }
 });
 
@@ -454,7 +457,7 @@ async function loadFoodMenu() {
 // 6. CART OPERATIONS
 // --------------------------------------------
 
-function addToCart(foodId) {
+function addToCart(foodId, button) {
   const food = foodMenu.find((item) => String(item.id) === String(foodId));
 
   if (!food) return;
@@ -474,6 +477,27 @@ function addToCart(foodId) {
 
   saveCart();
   renderCart();
+
+  button.classList.remove("just-added");
+  void button.offsetWidth;
+  button.classList.add("just-added");
+  button.textContent = "✓ Added!";
+  button.setAttribute("aria-label", `${food.name} added to cart`);
+  button.closest(".food-card")?.classList.add("item-added");
+  cartCountElement.classList.remove("cart-count-pulse");
+  void cartCountElement.offsetWidth;
+  cartCountElement.classList.add("cart-count-pulse");
+
+  window.setTimeout(() => {
+    if (!button.isConnected) return;
+    button.classList.remove("just-added");
+    button.textContent = "+ Add";
+    button.setAttribute("aria-label", `Add ${food.name} to cart`);
+    button.closest(".food-card")?.classList.remove("item-added");
+  }, 1100);
+  window.setTimeout(() => {
+    cartCountElement.classList.remove("cart-count-pulse");
+  }, 650);
 
   showCheckoutMessage(`${food.name} added to your cart.`);
 }
@@ -841,11 +865,35 @@ checkoutBtn.addEventListener("click", async () => {
     return;
   }
 
+  const deliveryAddress = deliveryAddressInput.value.trim();
+  if (!deliveryAddress) {
+    showCheckoutMessage("Please enter your delivery address before confirming.");
+    deliveryAddressInput.setAttribute("aria-invalid", "true");
+    deliveryAddressInput.focus();
+    return;
+  }
+  deliveryAddressInput.removeAttribute("aria-invalid");
+
+  const deliveryPhone = deliveryPhoneInput.value.trim();
+  const phoneDigits = deliveryPhone.replace(/\D/g, "");
+  const normalizedPhone = phoneDigits.startsWith("91") && phoneDigits.length === 12
+    ? phoneDigits.slice(2)
+    : phoneDigits;
+  if (!/^[6-9]\d{9}$/.test(normalizedPhone)) {
+    showCheckoutMessage("Enter a valid 10-digit Indian mobile number.");
+    deliveryPhoneInput.setAttribute("aria-invalid", "true");
+    deliveryPhoneInput.focus();
+    return;
+  }
+  deliveryPhoneInput.removeAttribute("aria-invalid");
+
   const order = {
     date: new Date().toISOString(),
     userId: currentUser.uid,
     customerName: currentUser.name || currentUser.email,
     customerEmail: currentUser.email,
+    deliveryAddress,
+    customerPhone: deliveryPhone,
     items: items.map((item) => ({
       id: item.id,
       name: item.name,
@@ -859,23 +907,34 @@ checkoutBtn.addEventListener("click", async () => {
     status: "Pending"
   };
 
-  const savedOrder = await saveOrder(order);
-  if (!savedOrder) return;
-  orders.unshift(savedOrder);
+  checkoutBtn.disabled = true;
+  showCheckoutMessage("Placing your order...");
+  try {
+    const savedOrder = await saveOrder(order);
+    if (!savedOrder) {
+      showCheckoutMessage("Could not place your order. Please try again.");
+      return;
+    }
+    orders.unshift(savedOrder);
 
-  cart = [];
-  await saveCart();
+    cart = [];
+    await saveCart();
 
-  renderCart();
-  renderOrders();
+    renderCart();
+    renderOrders();
+    deliveryAddressInput.value = "";
+    deliveryPhoneInput.value = "";
 
-  showCheckoutMessage(
-    `Order ${savedOrder.id.slice(0, 8)} placed successfully!`
-  );
+    showCheckoutMessage(
+      `Order ${savedOrder.id.slice(0, 8)} placed successfully!`
+    );
 
-  document.querySelector("#orders").scrollIntoView({
-    behavior: "smooth"
-  });
+    document.querySelector("#orders").scrollIntoView({
+      behavior: "smooth"
+    });
+  } finally {
+    checkoutBtn.disabled = false;
+  }
 });
 
 // --------------------------------------------
@@ -936,6 +995,13 @@ function renderOrders() {
           </p>
         `).join("")}
       </div>
+
+      <p class="order-delivery-address">
+        <strong>Deliver to:</strong> ${escapeHTML(order.deliveryAddress || "Address not available")}
+      </p>
+      <p class="order-delivery-address">
+        <strong>Contact number:</strong> ${escapeHTML(order.customerPhone || "Not provided")}
+      </p>
 
       <div class="order-item-footer">
         <span>Order total: <strong>₹${formatPrice(order.total)}</strong></span>
