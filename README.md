@@ -1,9 +1,9 @@
 https://shayefkabir2005.github.io/QuickBite/
 
 
-
-
 QuickBite – Online Food Ordering Website
+
+
 QuickBite is a modern, user-friendly online food ordering website developed as a web development mini project. The main objective of this project is to provide customers with a convenient platform to explore food items, browse different categories, and order their favorite meals online.
 
 The website features an attractive and responsive user interface designed using HTML, CSS, and JavaScript. Customers can view food items along with their names, prices, categories, and descriptions. The website includes a shopping cart where users can add or remove items and manage their orders before checkout.
