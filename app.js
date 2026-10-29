@@ -167,6 +167,7 @@ let authMode = "login";
 const currency = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 2
 });
+const DELIVERY_WINDOW_MS = 30 * 60 * 1000;
 
 function formatPrice(amount) {
   return currency.format(amount);
@@ -182,23 +183,72 @@ function escapeHTML(value) {
   })[character]);
 }
 
+function getDeliveryDeadline(order) {
+  const savedDeadline = Number(order.deliveryDeadline);
+  if (Number.isFinite(savedDeadline) && savedDeadline > 0) return savedDeadline;
+
+  const placedAt = Date.parse(order.date);
+  if (Number.isFinite(placedAt)) return placedAt + DELIVERY_WINDOW_MS;
+
+  const createdAt = Number(order.createdAt);
+  return Number.isFinite(createdAt) && createdAt > 0
+    ? createdAt + DELIVERY_WINDOW_MS
+    : null;
+}
+
+function updateDeliveryTimers() {
+  document.querySelectorAll(".delivery-timer").forEach((timer) => {
+    const status = timer.dataset.orderStatus.toLowerCase();
+    if (status === "delivered" || status === "cancelled") {
+      timer.className = "delivery-timer delivery-timer--complete";
+      timer.textContent = status === "delivered" ? "Delivered" : "Cancelled";
+      return;
+    }
+
+    const deadline = Number(timer.dataset.deadline);
+    if (!Number.isFinite(deadline) || deadline <= 0) {
+      timer.className = "delivery-timer delivery-timer--unavailable";
+      timer.textContent = "Timer unavailable";
+      return;
+    }
+
+    const remaining = deadline - Date.now();
+    const seconds = Math.max(0, Math.ceil(remaining / 1000));
+    const minutes = Math.floor(seconds / 60);
+    const displaySeconds = String(seconds % 60).padStart(2, "0");
+    const color = remaining <= 5 * 60 * 1000
+      ? "red"
+      : remaining <= 20 * 60 * 1000
+        ? "yellow"
+        : "green";
+
+    timer.className = `delivery-timer delivery-timer--${color}`;
+    timer.textContent = remaining <= 0
+      ? "00:00 · Time is up"
+      : `${minutes}:${displaySeconds} remaining`;
+  });
+}
+
 async function loadUserData() {
   const userRef = ref(db, `users/${currentUser.uid}`);
   const userSnapshot = await get(userRef);
-  const fallbackName = currentUser.email.split("@")[0];
 
   if (!userSnapshot.exists()) {
     await set(userRef, {
-      name: currentUser.name || fallbackName,
+      name: currentUser.name,
       email: currentUser.email,
       cart: null,
       createdAt: serverTimestamp()
     });
-    currentUser.name = currentUser.name || fallbackName;
     cart = [];
   } else {
     const profile = userSnapshot.val();
-    currentUser.name = profile.name || currentUser.name || fallbackName;
+    const profileName = typeof profile.name === "string" ? profile.name.trim() : "";
+    const emailUsername = currentUser.email.split("@")[0];
+    const isStoredName = profileName
+      && profileName.toLowerCase() !== "foodie"
+      && profileName.toLowerCase() !== emailUsername.toLowerCase();
+    currentUser.name = currentUser.name || (isStoredName ? profileName : "");
     cart = Array.isArray(profile.cart)
       ? profile.cart
       : Object.values(profile.cart || {});
@@ -684,7 +734,7 @@ function updateAccountUI() {
   const loggedIn = Boolean(currentUser?.email);
 
   accountBtn.innerHTML = loggedIn
-    ? `♙ ${escapeHTML(currentUser.name || currentUser.email)}`
+    ? `♙${currentUser.name ? ` ${escapeHTML(currentUser.name)}` : ""}`
     : "♙ Login / Sign Up";
 
   toggleAuthBtn.classList.toggle("hidden", loggedIn);
@@ -692,7 +742,9 @@ function updateAccountUI() {
   logoutBtn.classList.toggle("hidden", !loggedIn);
 
   if (loggedIn) {
-    authTitle.textContent = `Hi, ${currentUser.name || "Foodie"}!`;
+    authTitle.textContent = currentUser.name
+      ? `Hi, ${currentUser.name}!`
+      : "Welcome Back!";
     document.querySelector(".auth-subtitle").textContent =
       "You are signed in to your QuickBite account.";
 
@@ -818,10 +870,11 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  const displayName = user.displayName?.trim() || "";
   currentUser = {
     uid: user.uid,
     email: user.email,
-    name: user.displayName || user.email.split("@")[0]
+    name: displayName.toLowerCase() === "foodie" ? "" : displayName
   };
 
   try {
@@ -887,10 +940,12 @@ checkoutBtn.addEventListener("click", async () => {
   }
   deliveryPhoneInput.removeAttribute("aria-invalid");
 
+  const placedAt = Date.now();
   const order = {
-    date: new Date().toISOString(),
+    date: new Date(placedAt).toISOString(),
+    deliveryDeadline: placedAt + DELIVERY_WINDOW_MS,
     userId: currentUser.uid,
-    customerName: currentUser.name || currentUser.email,
+    customerName: currentUser.name || "Customer",
     customerEmail: currentUser.email,
     deliveryAddress,
     customerPhone: deliveryPhone,
@@ -986,6 +1041,16 @@ function renderOrders() {
         </span>
       </div>
 
+      <p class="delivery-timer-row">
+        <strong>Delivery countdown:</strong>
+        <span
+          class="delivery-timer"
+          data-deadline="${getDeliveryDeadline(order) ?? ""}"
+          data-order-status="${escapeHTML(order.status || "Pending")}"
+          aria-live="off"
+        ></span>
+      </p>
+
       <div class="order-food-list">
         ${order.items.map((item) => `
           <p>
@@ -1010,6 +1075,7 @@ function renderOrders() {
 
     </article>
   `).join("");
+  updateDeliveryTimers();
 }
 
 function formatOrderDate(dateString) {
@@ -1049,3 +1115,4 @@ function initializeApp() {
 }
 
 initializeApp();
+window.setInterval(updateDeliveryTimers, 1000);

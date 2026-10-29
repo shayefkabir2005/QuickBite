@@ -1092,6 +1092,47 @@
   font-size: 10px;
 }
 
+.order-card > .delivery-timer-row {
+  margin: 12px 0;
+  padding: 11px 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  background: #f7f8fa;
+  border-radius: 10px;
+}
+
+.delivery-timer {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.delivery-timer--green {
+  color: #176b3a;
+  background: #e6f7ec;
+}
+
+.delivery-timer--yellow {
+  color: #805c00;
+  background: #fff3cc;
+}
+
+.delivery-timer--red {
+  color: #a3211a;
+  background: #ffebeb;
+}
+
+.delivery-timer--complete,
+.delivery-timer--unavailable {
+  color: #555963;
+  background: #f0f1f3;
+}
+
 .admin-ordered-items {
   margin-top: 14px;
   padding: 12px;

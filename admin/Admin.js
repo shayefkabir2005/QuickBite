@@ -18,12 +18,14 @@ import {
 } from "../firebase.js";
 
 const ADMIN_EMAIL = "shayefkabir2005@gmail.com";
+const DELIVERY_WINDOW_MS = 30 * 60 * 1000;
 const $ = (id) => document.getElementById(id);
 
 let isAdmin = false;
 let stopOrdersListener = null;
 let knownOrderIds = null;
 const newOrderIds = new Set();
+const deletingOrderIds = new Set();
 
 function showNewOrderNotification() {
   const newOrderCount = newOrderIds.size;
@@ -60,6 +62,52 @@ function formatPrice(value) {
     : "0";
 }
 
+function getDeliveryDeadline(order) {
+  const savedDeadline = Number(order.deliveryDeadline);
+  if (Number.isFinite(savedDeadline) && savedDeadline > 0) return savedDeadline;
+
+  const placedAt = Date.parse(order.date);
+  if (Number.isFinite(placedAt)) return placedAt + DELIVERY_WINDOW_MS;
+
+  const createdAt = Number(order.createdAt);
+  return Number.isFinite(createdAt) && createdAt > 0
+    ? createdAt + DELIVERY_WINDOW_MS
+    : null;
+}
+
+function updateDeliveryTimers() {
+  document.querySelectorAll(".delivery-timer").forEach((timer) => {
+    const status = timer.dataset.orderStatus.toLowerCase();
+    if (status === "delivered" || status === "cancelled") {
+      timer.className = "delivery-timer delivery-timer--complete";
+      timer.textContent = status === "delivered" ? "Delivered" : "Cancelled";
+      return;
+    }
+
+    const deadline = Number(timer.dataset.deadline);
+    if (!Number.isFinite(deadline) || deadline <= 0) {
+      timer.className = "delivery-timer delivery-timer--unavailable";
+      timer.textContent = "Timer unavailable";
+      return;
+    }
+
+    const remaining = deadline - Date.now();
+    const seconds = Math.max(0, Math.ceil(remaining / 1000));
+    const minutes = Math.floor(seconds / 60);
+    const displaySeconds = String(seconds % 60).padStart(2, "0");
+    const color = remaining <= 5 * 60 * 1000
+      ? "red"
+      : remaining <= 20 * 60 * 1000
+        ? "yellow"
+        : "green";
+
+    timer.className = `delivery-timer delivery-timer--${color}`;
+    timer.textContent = remaining <= 0
+      ? "00:00 · Time is up"
+      : `${minutes}:${displaySeconds} remaining`;
+  });
+}
+
 async function loadAdminFoods() {
   const snapshot = await get(ref(db, "foods"));
   const foods = snapshot.val() || {};
@@ -88,7 +136,8 @@ async function loadAdminFoods() {
 
 async function loadAdminOrders(snapshot = null) {
   if (!snapshot) snapshot = await get(ref(db, "orders"));
-  const orders = Object.entries(snapshot.val() || {});
+  const orders = Object.entries(snapshot.val() || {})
+    .filter(([, order]) => String(order?.customerPhone ?? "").trim() !== "");
   const completedOrders = orders.filter(([, order]) => order.status === "Delivered");
   const totalSales = orders.reduce((total, [, order]) => {
     const orderTotal = Number(order.total);
@@ -106,9 +155,15 @@ async function loadAdminOrders(snapshot = null) {
   $("adminOrderList").innerHTML = orders.length === 0
     ? "<p>No orders received yet.</p>"
     : orders.map(([id, order]) => {
-        const items = Array.isArray(order.items)
-          ? order.items
-          : Object.values(order.items || {});
+      const customerName = String(order.customerName ?? "").trim();
+      const customerEmail = String(order.customerEmail ?? "").trim();
+      const displayCustomerName = customerName
+        && customerName.toLowerCase() !== customerEmail.toLowerCase()
+        ? customerName
+        : "Customer";
+      const items = Array.isArray(order.items)
+        ? order.items
+        : Object.values(order.items || {});
         const itemList = items.length
           ? items.map((item) => {
               const quantity = Number(item.quantity) || 0;
@@ -132,8 +187,16 @@ async function loadAdminOrders(snapshot = null) {
               </h3>
               <p>Current status: <strong>${safe(order.status || "Pending")}</strong></p>
             </div>
-            <p>Customer: <strong>${safe(order.customerName || "Customer")}</strong>
-              (${safe(order.customerEmail || "Email unavailable")})</p>
+            <p class="delivery-timer-row">
+              <strong>Delivery countdown:</strong>
+              <span
+                class="delivery-timer"
+                data-deadline="${getDeliveryDeadline(order) ?? ""}"
+                data-order-status="${safe(order.status || "Pending")}"
+                aria-live="off"
+              ></span>
+            </p>
+            <p>Customer: <strong>${safe(displayCustomerName)}</strong></p>
             <p><strong>Mobile number:</strong> ${safe(order.customerPhone || "Not provided")}</p>
             <div class="admin-ordered-items">
               <strong>Items ordered</strong>
@@ -155,6 +218,37 @@ async function loadAdminOrders(snapshot = null) {
           </article>
         `;
       }).join("");
+  updateDeliveryTimers();
+}
+
+async function deleteOrdersWithoutPhone(orders) {
+  const ordersToDelete = orders.filter(([id, order]) =>
+    String(order?.customerPhone ?? "").trim() === ""
+    && !deletingOrderIds.has(id)
+  );
+  if (ordersToDelete.length === 0) return;
+
+  const deletions = {};
+  ordersToDelete.forEach(([id, order]) => {
+    deletingOrderIds.add(id);
+    deletions[`orders/${id}`] = null;
+    if (typeof order?.userId === "string" && order.userId !== "") {
+      deletions[`userOrders/${order.userId}/${id}`] = null;
+    }
+  });
+
+  try {
+    await update(ref(db), deletions);
+    message(
+      "adminMessage",
+      `Deleted ${ordersToDelete.length} order${ordersToDelete.length === 1 ? "" : "s"} without a phone number.`
+    );
+  } catch (error) {
+    console.error("Could not delete orders without a phone number:", error);
+    message("adminMessage", "Could not delete orders without a phone number. Check database rules.");
+  } finally {
+    ordersToDelete.forEach(([id]) => deletingOrderIds.delete(id));
+  }
 }
 
 async function refreshDashboard() {
@@ -164,7 +258,10 @@ async function refreshDashboard() {
     await loadAdminFoods();
     if (!stopOrdersListener) {
       stopOrdersListener = onValue(ref(db, "orders"), (snapshot) => {
-        const orders = Object.entries(snapshot.val() || {});
+        const allOrders = Object.entries(snapshot.val() || {});
+        const orders = allOrders.filter(([, order]) =>
+          String(order?.customerPhone ?? "").trim() !== ""
+        );
         if (knownOrderIds === null) {
           knownOrderIds = new Set(orders.map(([id]) => id));
         } else {
@@ -174,6 +271,7 @@ async function refreshDashboard() {
           if (addedOrders.length > 0) showNewOrderNotification();
         }
 
+        deleteOrdersWithoutPhone(allOrders);
         loadAdminOrders(snapshot).catch((error) => {
           console.error("Could not refresh customer orders:", error);
           message("adminMessage", "Could not refresh customer orders.");
@@ -462,9 +560,12 @@ $("adminOrderList").addEventListener("click", async (event) => {
       [`orders/${id}/status`]: status,
       [`userOrders/${userId}/${id}/status`]: status
     });
+
     message("adminMessage", "Order status updated.");
   } catch (error) {
     console.error("Order status update failed:", error);
     message("adminMessage", "Could not update order status.");
   }
 });
+
+window.setInterval(updateDeliveryTimers, 1000);
