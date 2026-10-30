@@ -989,6 +989,22 @@ img {
   font-size: 11px;
 }
 
+.order-delivered-at,
+.order-placed-at {
+  margin-top: 10px;
+  font-size: 11px;
+}
+
+.order-delivered-at {
+  color: var(--success);
+}
+
+.time-estimate-note {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
 .order-item-footer {
   display: flex;
   justify-content: space-between;

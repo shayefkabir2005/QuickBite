@@ -62,6 +62,48 @@ function formatPrice(value) {
     : "0";
 }
 
+function formatDeliveryTime(deliveredAt) {
+  const timestamp = typeof deliveredAt === "number"
+    ? deliveredAt
+    : Date.parse(deliveredAt);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return "Delivery time not recorded";
+  }
+
+  return new Date(timestamp).toLocaleString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Asia/Kolkata",
+    timeZoneName: "short"
+  });
+}
+
+function getOrderPlacedAt(order) {
+  const placedAt = typeof order.date === "number"
+    ? order.date
+    : Date.parse(order.date);
+  if (Number.isFinite(placedAt) && placedAt > 0) return placedAt;
+
+  const createdAt = Number(order.createdAt);
+  return Number.isFinite(createdAt) && createdAt > 0 ? createdAt : null;
+}
+
+function getEstimatedDeliveryTime(order, orderId) {
+  const placedAt = getOrderPlacedAt(order);
+  if (!Number.isFinite(placedAt)) return null;
+
+  const seed = `${orderId}:${placedAt}`.split("").reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    7
+  );
+  const estimatedMinutes = 5 + (seed % 26);
+  return placedAt + estimatedMinutes * 60 * 1000;
+}
+
 function getDeliveryDeadline(order) {
   const savedDeadline = Number(order.deliveryDeadline);
   if (Number.isFinite(savedDeadline) && savedDeadline > 0) return savedDeadline;
@@ -196,6 +238,20 @@ async function loadAdminOrders(snapshot = null) {
                 aria-live="off"
               ></span>
             </p>
+            <p class="admin-order-placed-at">
+              <strong>Placed at:</strong> ${safe(formatDeliveryTime(
+                getOrderPlacedAt(order)
+              ))}
+            </p>
+            ${order.status?.toLowerCase() === "delivered"
+              ? `<p class="admin-delivered-at">
+                  <strong>${order.deliveredAt ? "Delivered at:" : "Estimated delivery time:"}</strong>
+                  ${safe(formatDeliveryTime(
+                    order.deliveredAt || getEstimatedDeliveryTime(order, id)
+                  ))}
+                  ${order.deliveredAt ? "" : '<span class="time-estimate-note">(estimated for older order)</span>'}
+                </p>`
+              : ""}
             <p>Customer: <strong>${safe(displayCustomerName)}</strong></p>
             <p><strong>Mobile number:</strong> ${safe(order.customerPhone || "Not provided")}</p>
             <div class="admin-ordered-items">
@@ -556,10 +612,16 @@ $("adminOrderList").addEventListener("click", async (event) => {
   const status = $(`status-${id}`).value;
 
   try {
-    await update(ref(db), {
+    const orderUpdates = {
       [`orders/${id}/status`]: status,
       [`userOrders/${userId}/${id}/status`]: status
-    });
+    };
+    if (status === "Delivered") {
+      const deliveredAt = serverTimestamp();
+      orderUpdates[`orders/${id}/deliveredAt`] = deliveredAt;
+      orderUpdates[`userOrders/${userId}/${id}/deliveredAt`] = deliveredAt;
+    }
+    await update(ref(db), orderUpdates);
 
     message("adminMessage", "Order status updated.");
   } catch (error) {

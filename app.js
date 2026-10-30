@@ -14,6 +14,7 @@ import {
   updateProfile,
   ref,
   get,
+  onValue,
   set,
   update,
   push,
@@ -159,6 +160,7 @@ let foodMenu = [
 let cart = [];
 let orders = [];
 let currentUser = null;
+let unsubscribeOrders = null;
 
 let selectedCategory = "All";
 let searchTerm = "";
@@ -254,16 +256,29 @@ async function loadUserData() {
       : Object.values(profile.cart || {});
   }
 
-  const orderSnapshot = await get(ref(db, `userOrders/${currentUser.uid}`));
-  orders = Object.entries(orderSnapshot.val() || {})
-    .map(([id, order]) => ({
-      id,
-      ...order,
-      items: Array.isArray(order.items)
-        ? order.items
-        : Object.values(order.items || {})
-    }))
-    .sort((left, right) => new Date(right.date) - new Date(left.date));
+}
+
+function watchUserOrders() {
+  unsubscribeOrders?.();
+  unsubscribeOrders = onValue(
+    ref(db, `userOrders/${currentUser.uid}`),
+    (snapshot) => {
+      orders = Object.entries(snapshot.val() || {})
+        .map(([id, order]) => ({
+          id,
+          ...order,
+          items: Array.isArray(order.items)
+            ? order.items
+            : Object.values(order.items || {})
+        }))
+        .sort((left, right) => new Date(right.date) - new Date(left.date));
+      renderOrders();
+    },
+    (error) => {
+      console.error("Could not sync customer order updates:", error);
+      showCheckoutMessage("Could not sync order updates. Please refresh and try again.");
+    }
+  );
 }
 
 async function saveCart() {
@@ -860,6 +875,9 @@ logoutBtn.addEventListener("click", async () => {
 });
 
 onAuthStateChanged(auth, async (user) => {
+  unsubscribeOrders?.();
+  unsubscribeOrders = null;
+
   if (!user) {
     currentUser = null;
     cart = [];
@@ -879,6 +897,7 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     await loadUserData();
+    watchUserOrders();
   } catch (error) {
     console.error("Could not load the customer account data:", error);
     authMessage.textContent =
@@ -970,7 +989,9 @@ checkoutBtn.addEventListener("click", async () => {
       showCheckoutMessage("Could not place your order. Please try again.");
       return;
     }
-    orders.unshift(savedOrder);
+    if (!orders.some((orderEntry) => orderEntry.id === savedOrder.id)) {
+      orders.unshift(savedOrder);
+    }
 
     cart = [];
     await saveCart();
@@ -1051,6 +1072,22 @@ function renderOrders() {
         ></span>
       </p>
 
+      ${order.status?.toLowerCase() === "delivered"
+        ? `<p class="order-delivered-at">
+            <strong>${order.deliveredAt ? "Delivered at:" : "Estimated delivery time:"}</strong>
+            ${escapeHTML(formatDeliveryTime(
+              order.deliveredAt || getEstimatedDeliveryTime(order, order.id)
+            ))}
+            ${order.deliveredAt ? "" : '<span class="time-estimate-note">(estimated for older order)</span>'}
+          </p>`
+        : ""}
+
+      <p class="order-placed-at">
+        <strong>Placed at:</strong> ${escapeHTML(
+          formatDeliveryTime(getOrderPlacedAt(order))
+        )}
+      </p>
+
       <div class="order-food-list">
         ${order.items.map((item) => `
           <p>
@@ -1089,6 +1126,48 @@ function formatOrderDate(dateString) {
     dateStyle: "medium",
     timeStyle: "short"
   });
+}
+
+function formatDeliveryTime(deliveredAt) {
+  const timestamp = typeof deliveredAt === "number"
+    ? deliveredAt
+    : Date.parse(deliveredAt);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return "Time not available";
+  }
+
+  return new Date(timestamp).toLocaleString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Asia/Kolkata",
+    timeZoneName: "short"
+  });
+}
+
+function getOrderPlacedAt(order) {
+  const placedAt = typeof order.date === "number"
+    ? order.date
+    : Date.parse(order.date);
+  if (Number.isFinite(placedAt) && placedAt > 0) return placedAt;
+
+  const createdAt = Number(order.createdAt);
+  return Number.isFinite(createdAt) && createdAt > 0 ? createdAt : null;
+}
+
+function getEstimatedDeliveryTime(order, orderId) {
+  const placedAt = getOrderPlacedAt(order);
+  if (!Number.isFinite(placedAt)) return null;
+
+  const seed = `${orderId}:${placedAt}`.split("").reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    7
+  );
+  const estimatedMinutes = 5 + (seed % 26);
+  return placedAt + estimatedMinutes * 60 * 1000;
 }
 
 orderListElement.addEventListener("click", (event) => {

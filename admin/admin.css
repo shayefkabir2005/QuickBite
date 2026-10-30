@@ -1104,6 +1104,20 @@
   border-radius: 10px;
 }
 
+.admin-delivered-at {
+  color: var(--success);
+}
+
+.admin-order-placed-at {
+  color: var(--admin-muted);
+}
+
+.time-estimate-note {
+  margin-left: 4px;
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
 .delivery-timer {
   padding: 4px 10px;
   border-radius: 999px;
