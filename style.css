@@ -868,6 +868,53 @@ img {
   margin-top: 7px;
 }
 
+.payment-method-section {
+  margin: 20px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.payment-method-section legend {
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.payment-method-option {
+  padding: 10px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.payment-method-option + .payment-method-option {
+  border-top: 1px solid var(--border);
+}
+
+.payment-method-option input {
+  margin-top: 3px;
+  accent-color: var(--primary);
+}
+
+.payment-method-option span {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.payment-method-option small,
+.payment-method-hint {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.payment-method-hint {
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
 .summary-note {
   margin-bottom: 18px;
   color: var(--muted);
@@ -1013,7 +1060,27 @@ img {
   font-size: 11px;
 }
 
-.order-demo-label {
+.order-payment-details {
+  color: var(--muted);
+}
+
+.order-refund-record {
+  margin-top: 14px;
+  padding: 12px;
+  background: #fff5ef;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.order-refund-record p {
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+.order-refund-record small {
+  display: block;
+  margin-top: 8px;
   color: var(--muted);
 }
 

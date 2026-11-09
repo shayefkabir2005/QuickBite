@@ -1182,6 +1182,25 @@
   font-size: 12px !important;
 }
 
+.admin-refund-record {
+  margin-top: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 7px;
+  background: #fff5ef;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.admin-refund-record p {
+  overflow-wrap: anywhere;
+}
+
+.admin-refund-record small {
+  color: var(--admin-muted);
+}
+
 /* Common class names for dynamically generated rows */
 
 .admin-food-item,

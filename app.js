@@ -960,6 +960,14 @@ checkoutBtn.addEventListener("click", async () => {
   deliveryPhoneInput.removeAttribute("aria-invalid");
 
   const placedAt = Date.now();
+  const paymentMethod = document.querySelector(
+    'input[name="paymentMethod"]:checked'
+  )?.value;
+  if (!["upi", "cod"].includes(paymentMethod)) {
+    showCheckoutMessage("Please select a valid payment method.");
+    return;
+  }
+
   const order = {
     date: new Date(placedAt).toISOString(),
     deliveryDeadline: placedAt + DELIVERY_WINDOW_MS,
@@ -978,6 +986,8 @@ checkoutBtn.addEventListener("click", async () => {
     subtotal,
     deliveryFee: 0,
     total: subtotal,
+    paymentMethod,
+    paymentStatus: "Demo only - no payment processed",
     status: "Pending"
   };
 
@@ -1002,7 +1012,7 @@ checkoutBtn.addEventListener("click", async () => {
     deliveryPhoneInput.value = "";
 
     showCheckoutMessage(
-      `Order ${savedOrder.id.slice(0, 8)} placed successfully!`
+      `Demo order ${savedOrder.id.slice(0, 8)} placed. No payment was processed.`
     );
 
     document.querySelector("#orders").scrollIntoView({
@@ -1107,8 +1117,24 @@ function renderOrders() {
 
       <div class="order-item-footer">
         <span>Order total: <strong>₹${formatPrice(order.total)}</strong></span>
-        <span class="order-demo-label">Payment not taken online</span>
+        <span class="order-payment-details">
+          ${escapeHTML(order.paymentMethod === "upi"
+            ? "UPI"
+            : order.paymentMethod === "cod"
+              ? "Cash on Delivery"
+              : "Payment method not recorded")}
+          · ${escapeHTML(order.paymentStatus || "Status not recorded")}
+        </span>
       </div>
+
+      ${order.refund
+        ? `<div class="order-refund-record">
+            <strong>Demo refund record</strong>
+            <p>Reference number: <strong>${escapeHTML(order.refund.referenceNumber || "Not recorded")}</strong></p>
+            <p>Transaction number: <strong>${escapeHTML(order.refund.transactionNumber || "Not recorded")}</strong></p>
+            <small>Demo only — no money was transferred.</small>
+          </div>`
+        : ""}
 
     </article>
   `).join("");
@@ -1171,12 +1197,14 @@ function getEstimatedDeliveryTime(order, orderId) {
 }
 
 orderListElement.addEventListener("click", (event) => {
-  const button = event.target.closest('[data-action="open-login"]');
+  const button = event.target.closest("[data-action]");
 
   if (!button) return;
 
-  updateAccountUI();
-  authDialog.showModal();
+  if (button.dataset.action === "open-login") {
+    updateAccountUI();
+    authDialog.showModal();
+  }
 });
 
 // --------------------------------------------

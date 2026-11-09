@@ -261,6 +261,22 @@ async function loadAdminOrders(snapshot = null) {
             <p class="admin-order-address"><strong>Delivery address:</strong>
               ${safe(order.deliveryAddress || "Address not available")}</p>
             <p class="admin-order-total">Order total: <strong>₹${formatPrice(order.total)}</strong></p>
+            ${String(order.status).toLowerCase() === "cancelled"
+              ? order.refund
+                ? `<div class="admin-refund-record">
+                    <strong>Demo refund record</strong>
+                    <p>Reference number: <strong>${safe(order.refund.referenceNumber || "Not recorded")}</strong></p>
+                    <p>Transaction number: <strong>${safe(order.refund.transactionNumber || "Not recorded")}</strong></p>
+                    <small>Demo only — no money was transferred.</small>
+                  </div>`
+                : `<div class="admin-refund-record">
+                    <strong>Cancelled order</strong>
+                    <p>Create a demo refund record with reference and transaction numbers.</p>
+                    <button type="button" data-refund="${safe(id)}"
+                      data-user-id="${safe(order.userId)}">Create Demo Refund Record</button>
+                    <small>Demo only — this will not transfer money.</small>
+                  </div>`
+              : ""}
             <label for="status-${safe(id)}">Change status</label>
             <select id="status-${safe(id)}">
               ${["Pending", "Preparing", "Out for Delivery", "Delivered", "Cancelled"]
@@ -604,6 +620,50 @@ $("adminFoodList").addEventListener("click", async (event) => {
 });
 
 $("adminOrderList").addEventListener("click", async (event) => {
+  const refundButton = event.target.closest("[data-refund]");
+  if (refundButton && isAdmin) {
+    const id = refundButton.dataset.refund;
+    const userId = refundButton.dataset.userId;
+    refundButton.disabled = true;
+
+    try {
+      const orderSnapshot = await get(ref(db, `orders/${id}`));
+      const order = orderSnapshot.val();
+      if (!order || String(order.status).toLowerCase() !== "cancelled") {
+        message("adminMessage", "Only cancelled orders can have a demo refund record.");
+        return;
+      }
+      if (order.refund) {
+        message("adminMessage", "A demo refund record already exists for this order.");
+        return;
+      }
+      if (typeof userId !== "string" || !userId) {
+        message("adminMessage", "Could not identify the customer order record.");
+        return;
+      }
+
+      const uniqueSuffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
+      const refund = {
+        status: "Demo only - no money transferred",
+        referenceNumber: `DEMO-REF-${uniqueSuffix}`,
+        transactionNumber: `DEMO-TXN-${uniqueSuffix}`,
+        createdAt: serverTimestamp()
+      };
+      await update(ref(db), {
+        [`orders/${id}/refund`]: refund,
+        [`userOrders/${userId}/${id}/refund`]: refund
+      });
+
+      message("adminMessage", "Demo refund record created. No money was transferred.");
+    } catch (error) {
+      console.error("Could not create demo refund record:", error);
+      message("adminMessage", "Could not create the demo refund record. Check database rules and try again.");
+    } finally {
+      refundButton.disabled = false;
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-status]");
   if (!button || !isAdmin) return;
 

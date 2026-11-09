@@ -225,8 +225,27 @@
             <p class="delivery-address-hint">Add a complete address so your food reaches you without delay.</p>
           </section>
 
+          <fieldset class="payment-method-section">
+            <legend>Payment method</legend>
+            <label class="payment-method-option">
+              <input type="radio" name="paymentMethod" value="cod" checked>
+              <span>
+                <strong>Cash on Delivery</strong>
+                <small>Demo option only — no payment will be collected</small>
+              </span>
+            </label>
+            <label class="payment-method-option">
+              <input type="radio" name="paymentMethod" value="upi">
+              <span>
+                <strong>UPI</strong>
+                <small>Demo option only — no UPI app or payment will be launched</small>
+              </span>
+            </label>
+            <p class="payment-method-hint">Demo checkout only. Selecting a method records your choice with the order; it does not process a payment.</p>
+          </fieldset>
+
           <p class="summary-note">
-            Please review your order and delivery details before confirming.
+            Please review your order, delivery details and payment method before confirming.
           </p>
 
           <button id="checkoutBtn" class="primary-btn checkout-btn">
