@@ -226,22 +226,29 @@
           </section>
 
           <fieldset class="payment-method-section">
-            <legend>Payment method</legend>
-            <label class="payment-method-option">
-              <input type="radio" name="paymentMethod" value="cod" checked>
-              <span>
-                <strong>Cash on Delivery</strong>
-                <small>Demo option only — no payment will be collected</small>
-              </span>
-            </label>
-            <label class="payment-method-option">
-              <input type="radio" name="paymentMethod" value="upi">
-              <span>
-                <strong>UPI</strong>
-                <small>Demo option only — no UPI app or payment will be launched</small>
-              </span>
-            </label>
-            <p class="payment-method-hint">Demo checkout only. Selecting a method records your choice with the order; it does not process a payment.</p>
+            <legend>Choose payment method</legend>
+            <div class="payment-method-options">
+              <label class="payment-method-option">
+                <input type="radio" name="paymentMethod" value="cod" checked>
+                <span class="payment-method-icon" aria-hidden="true">₹</span>
+                <span class="payment-method-copy">
+                  <strong>Cash on Delivery</strong>
+                  <small>Simulated cash payment at delivery</small>
+                </span>
+              </label>
+              <label class="payment-method-option">
+                <input type="radio" name="paymentMethod" value="upi">
+                <span class="payment-method-icon payment-method-icon--upi" aria-hidden="true">UPI</span>
+                <span class="payment-method-copy">
+                  <strong>UPI</strong>
+                  <small>Simulated UPI checkout</small>
+                </span>
+              </label>
+            </div>
+            <p class="payment-method-hint">
+              <span aria-hidden="true">ⓘ</span>
+              Demo only. No payment is collected or transferred.
+            </p>
           </fieldset>
 
           <p class="summary-note">

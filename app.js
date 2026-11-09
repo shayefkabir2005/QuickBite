@@ -987,7 +987,6 @@ checkoutBtn.addEventListener("click", async () => {
     deliveryFee: 0,
     total: subtotal,
     paymentMethod,
-    paymentStatus: "Demo only - no payment processed",
     status: "Pending"
   };
 
@@ -1012,7 +1011,7 @@ checkoutBtn.addEventListener("click", async () => {
     deliveryPhoneInput.value = "";
 
     showCheckoutMessage(
-      `Demo order ${savedOrder.id.slice(0, 8)} placed. No payment was processed.`
+      `Order ${savedOrder.id.slice(0, 8)} placed successfully!`
     );
 
     document.querySelector("#orders").scrollIntoView({
@@ -1117,19 +1116,12 @@ function renderOrders() {
 
       <div class="order-item-footer">
         <span>Order total: <strong>₹${formatPrice(order.total)}</strong></span>
-        <span class="order-payment-details">
-          ${escapeHTML(order.paymentMethod === "upi"
-            ? "UPI"
-            : order.paymentMethod === "cod"
-              ? "Cash on Delivery"
-              : "Payment method not recorded")}
-          · ${escapeHTML(order.paymentStatus || "Status not recorded")}
-        </span>
       </div>
 
       ${order.refund
         ? `<div class="order-refund-record">
-            <strong>Demo refund record</strong>
+            <strong>Demo refund issued</strong>
+            <p>Refund amount: <strong>₹${formatPrice(order.refund.amount ?? order.total)}</strong></p>
             <p>Reference number: <strong>${escapeHTML(order.refund.referenceNumber || "Not recorded")}</strong></p>
             <p>Transaction number: <strong>${escapeHTML(order.refund.transactionNumber || "Not recorded")}</strong></p>
             <small>Demo only — no money was transferred.</small>

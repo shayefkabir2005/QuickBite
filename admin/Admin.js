@@ -264,17 +264,18 @@ async function loadAdminOrders(snapshot = null) {
             ${String(order.status).toLowerCase() === "cancelled"
               ? order.refund
                 ? `<div class="admin-refund-record">
-                    <strong>Demo refund record</strong>
+                    <strong>Demo refund issued</strong>
+                    <p>Refund amount: <strong>₹${formatPrice(order.refund.amount ?? order.total)}</strong></p>
                     <p>Reference number: <strong>${safe(order.refund.referenceNumber || "Not recorded")}</strong></p>
                     <p>Transaction number: <strong>${safe(order.refund.transactionNumber || "Not recorded")}</strong></p>
                     <small>Demo only — no money was transferred.</small>
                   </div>`
                 : `<div class="admin-refund-record">
                     <strong>Cancelled order</strong>
-                    <p>Create a demo refund record with reference and transaction numbers.</p>
+                    <p>Issue a full demo refund of ₹${formatPrice(order.total)}.</p>
                     <button type="button" data-refund="${safe(id)}"
-                      data-user-id="${safe(order.userId)}">Create Demo Refund Record</button>
-                    <small>Demo only — this will not transfer money.</small>
+                      data-user-id="${safe(order.userId)}">Issue Demo Refund</button>
+                    <small>Demo only — this records the refund but does not transfer money.</small>
                   </div>`
               : ""}
             <label for="status-${safe(id)}">Change status</label>
@@ -644,7 +645,8 @@ $("adminOrderList").addEventListener("click", async (event) => {
 
       const uniqueSuffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
       const refund = {
-        status: "Demo only - no money transferred",
+        amount: Number(order.total),
+        status: "Demo refund issued - no money transferred",
         referenceNumber: `DEMO-REF-${uniqueSuffix}`,
         transactionNumber: `DEMO-TXN-${uniqueSuffix}`,
         createdAt: serverTimestamp()
@@ -654,7 +656,7 @@ $("adminOrderList").addEventListener("click", async (event) => {
         [`userOrders/${userId}/${id}/refund`]: refund
       });
 
-      message("adminMessage", "Demo refund record created. No money was transferred.");
+      message("adminMessage", `Demo refund of ₹${formatPrice(refund.amount)} issued. No money was transferred.`);
     } catch (error) {
       console.error("Could not create demo refund record:", error);
       message("adminMessage", "Could not create the demo refund record. Check database rules and try again.");
